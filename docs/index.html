@@ -184,7 +184,7 @@
 
       <h3>3. How It Works Under the Hood & Riskiest Assumption (Week 2+)</h3>
       <p><strong>Riskiest Assumption:</strong> That AI reflections feel generic or preachy, so users don't come back. Secondary risk: the model inventing fake Stoic quotes.</p>
-      <p><strong>Simple Architecture:</strong> Journal entry (browser) → Flask app (Python, local) → Claude Haiku 5.5 via OpenRouter → structured Stoic reflection, saved to a local JSON history</p>
+      <p><strong>Simple Architecture:</strong> Journal entry (browser) → Flask app (Python, local) → Claude Haiku 5.5 via the Anthropic API → structured Stoic reflection, saved to a local JSON history</p>
 
       <h3>4. Unit Economics & Analytics Snapshot (Updated Weekly)</h3>
       <div class="grid-2">
@@ -215,7 +215,7 @@
       <div class="log-entry">
         <h3>Build 1 · Intent.md & Throwaway Prototype (Due Nov 9)</h3>
         <ul>
-          <li><strong>What shipped:</strong> A working local prototype (Flask + one HTML page): enter a challenge, get a structured Stoic reflection from Claude Haiku 5.5 via OpenRouter, and browse saved past reflections. API key is read from <code>.env</code> only. Product Page and PRD v1 published.</li>
+          <li><strong>What shipped:</strong> A working local prototype (Flask + one HTML page): enter a challenge, get a structured Stoic reflection from Claude Haiku 5.5 via the Anthropic API, and browse saved past reflections. API key is read from <code>.env</code> only. Product Page and PRD v1 published.</li>
           <li><strong>Things learned with AI:</strong> [TODO Juhi: in your own words]</li>
           <li><strong>What broke / changed in PRD:</strong> Narrowed "track personal growth" to a simple saved history for now; trends/insights deferred until real users show what they want. Asking the model for structured JSON made the output consistent and easy to display.</li>
           <li><strong>Cost & time this week:</strong> $[TODO] · [TODO] hours</li>

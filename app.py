@@ -12,28 +12,41 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-import requests
+import anthropic
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
+from pydantic import BaseModel
 
-load_dotenv()  # reads OPENROUTER_API_KEY (and optional OPENROUTER_MODEL) from .env
+load_dotenv()  # reads ANTHROPIC_API_KEY (and optional ANTHROPIC_MODEL) from .env
 
-API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-MODEL = os.getenv("OPENROUTER_MODEL", "anthropic/claude-haiku-5.5")
+API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-5-5")
 DATA_FILE = Path(__file__).parent / "data" / "reflections.json"
 MAX_ENTRY_CHARS = 2000
 
 SYSTEM_PROMPT = """You are Stoicly, a warm, practical guide to Stoic philosophy.
-The user describes an everyday challenge. Reply ONLY with a JSON object with these keys:
-- "in_control": 1-3 short bullet strings: what is within the user's control
-- "not_in_control": 1-3 short bullet strings: what is outside their control
-- "reframe": 2-4 sentences reframing the situation through a Stoic lens, kind and plain-spoken
-- "quote": a real, well-known quote from Marcus Aurelius, Epictetus, or Seneca
-- "quote_author": the author of the quote
-- "action": one small, concrete action the user can take today
+The user describes an everyday challenge. Respond with:
+- in_control: 1-3 short points about what is within the user's control
+- not_in_control: 1-3 short points about what is outside their control
+- reframe: 2-4 sentences reframing the situation through a Stoic lens, kind and plain-spoken
+- quote: a real, well-known quote from Marcus Aurelius, Epictetus, or Seneca
+- quote_author: the author of the quote
+- action: one small, concrete action the user can take today
 Do not invent quotes. Avoid jargon. You are not a therapist; if the user mentions
 self-harm or crisis, set "reframe" to a gentle message urging them to contact the
 988 Suicide & Crisis Lifeline (call or text 988 in the US) or local emergency services."""
+
+
+class Reflection(BaseModel):
+    """The shape every AI reply must have (enforced by structured outputs)."""
+
+    in_control: list[str]
+    not_in_control: list[str]
+    reframe: str
+    quote: str
+    quote_author: str
+    action: str
+
 
 app = Flask(__name__)
 
@@ -52,26 +65,18 @@ def save_reflection(entry):
 
 
 def ask_model(challenge):
-    """Send the challenge to OpenRouter and return the parsed reflection dict."""
-    response = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers={"Authorization": f"Bearer {API_KEY}"},
-        json={
-            "model": MODEL,
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": challenge},
-            ],
-            "response_format": {"type": "json_object"},
-        },
-        timeout=60,
+    """Send the challenge to Claude and return the reflection as a dict."""
+    client = anthropic.Anthropic(api_key=API_KEY, timeout=60.0)
+    response = client.messages.parse(
+        model=MODEL,
+        max_tokens=4000,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": challenge}],
+        output_format=Reflection,
     )
-    response.raise_for_status()
-    text = response.json()["choices"][0]["message"]["content"].strip()
-    # Some models wrap JSON in ```json fences; strip them if present.
-    if text.startswith("```"):
-        text = text.strip("`").removeprefix("json").strip()
-    return json.loads(text)
+    if response.parsed_output is None:  # e.g. the model declined or was cut off
+        raise ValueError(f"No reflection returned (stop_reason={response.stop_reason})")
+    return response.parsed_output.model_dump()
 
 
 @app.get("/")
@@ -92,11 +97,13 @@ def reflect():
     if len(challenge) > MAX_ENTRY_CHARS:
         return jsonify(error=f"Please keep it under {MAX_ENTRY_CHARS} characters."), 400
     if not API_KEY or "replace-with-your-key" in API_KEY:
-        return jsonify(error="No OpenRouter API key found. Add one to your .env file."), 500
+        return jsonify(error="No Anthropic API key found. Add ANTHROPIC_API_KEY to your .env file."), 500
 
     try:
         reflection = ask_model(challenge)
-    except (requests.RequestException, KeyError, ValueError) as exc:
+    except anthropic.AuthenticationError:
+        return jsonify(error="Your Anthropic API key was rejected. Check ANTHROPIC_API_KEY in .env."), 502
+    except (anthropic.APIError, ValueError) as exc:
         app.logger.error("Model call failed: %s", exc)
         return jsonify(error="Stoicly couldn't reach the AI just now. Please try again."), 502
 

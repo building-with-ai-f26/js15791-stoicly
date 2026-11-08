@@ -5,11 +5,11 @@
 ## 1. Project Overview
 - **What this repo builds:** Stoicly, an AI-powered reflection app. A user describes an everyday challenge and gets a Stoic reflection (in/out of control, reframe, real quote, one action); reflections are saved so they can track growth over time.
 - **Primary user & core workflow:** People seeking self-help guided by Stoicism. Core workflow: describe challenge → Stoic reflection → saved to history. Full PRD in `docs/index.html`. UI must stay simple and user-friendly.
-- **Tech stack:** Python 3 / Flask (`app.py`) / plain HTML+JS (`templates/index.html`) / local JSON file (`data/reflections.json`) / OpenRouter API (default model `anthropic/claude-haiku-5.5`, override with `OPENROUTER_MODEL`)
+- **Tech stack:** Python 3 / Flask (`app.py`) / plain HTML+JS (`templates/index.html`) / local JSON file (`data/reflections.json`) / Anthropic API via the `anthropic` Python SDK with structured outputs (default model `claude-haiku-5-5`, override with `ANTHROPIC_MODEL`)
 
 ## 2. Commands
 - **Install dependencies:** `python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
-- **Run locally:** `python app.py` → http://localhost:5000 (needs `OPENROUTER_API_KEY` in `.env`)
+- **Run locally:** `python app.py` → http://localhost:5000 (needs `ANTHROPIC_API_KEY` in `.env`)
 - **Run deterministic tests:** none yet (planned for Build 4)
 - **Run model evals:** none yet (planned for Build 4)
 

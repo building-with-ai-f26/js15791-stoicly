@@ -35,7 +35,7 @@ Create your PostHog account in Week 1. Install it on the Product Page and local 
 
 ## Local setup
 
-Requires Python 3.10+ and an [OpenRouter](https://openrouter.ai) API key.
+Requires Python 3.10+ and an Anthropic API key (https://console.anthropic.com → Settings → API Keys).
 
 ```bash
 git clone https://github.com/building-with-ai-f26/js15791-stoicly.git
@@ -46,7 +46,7 @@ cd js15791-stoicly
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env      # then paste your real OpenRouter key into .env
+cp .env.example .env      # then paste your real Anthropic key into .env
 python app.py             # open http://localhost:5000
 ```
 
