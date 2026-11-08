@@ -3,15 +3,15 @@
 > Give this file to your coding agent and check that it is using these instructions. Keep the stack, commands, and ground rules current.
 
 ## 1. Project Overview
-- **What this repo builds:** [1–2 sentence summary]
-- **Primary user & core workflow:** [See the living PRD in `docs/index.html`]
-- **Tech stack:** [e.g., Python 3.12 / FastAPI / Next.js / SQLite / OpenRouter API]
+- **What this repo builds:** Stoicly, an AI-powered reflection app. A user describes an everyday challenge and gets a Stoic reflection (in/out of control, reframe, real quote, one action); reflections are saved so they can track growth over time.
+- **Primary user & core workflow:** People seeking self-help guided by Stoicism. Core workflow: describe challenge → Stoic reflection → saved to history. Full PRD in `docs/index.html`. UI must stay simple and user-friendly.
+- **Tech stack:** Python 3 / Flask (`app.py`) / plain HTML+JS (`templates/index.html`) / local JSON file (`data/reflections.json`) / OpenRouter API (default model `anthropic/claude-haiku-5.5`, override with `OPENROUTER_MODEL`)
 
 ## 2. Commands
-- **Install dependencies:** `[e.g., npm install / uv sync]`
-- **Run locally:** `[e.g., npm run dev]`
-- **Run deterministic tests:** `[e.g., pytest / npm test]`
-- **Run model evals:** `[e.g., python tests/eval.py]`
+- **Install dependencies:** `python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
+- **Run locally:** `python app.py` → http://localhost:5000 (needs `OPENROUTER_API_KEY` in `.env`)
+- **Run deterministic tests:** none yet (planned for Build 4)
+- **Run model evals:** none yet (planned for Build 4)
 
 ## 3. Non-Negotiable Engineering Rules
 1. **Plan before coding:** Before touching multiple files, propose a brief plan and wait for approval.

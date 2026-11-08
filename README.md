@@ -1,10 +1,10 @@
-# [Project Name]
+# Stoicly
 
-> **One-line pitch:** [Who is this for, and what job does it do for them?]
+> **One-line pitch:** An AI-powered reflection app for anyone seeking self-improvement: describe a challenge, get a Stoic reframe and one small action, and track your growth over time.
 
-- **Builder:** [Your Name] (`@github-handle`)
-- **Pod:** [Pod Name / Number]
-- **Product Page & Living PRD:** [Add your GitHub Pages URL]
+- **Builder:** Juhi Shah (`@js15791`)
+- **Pod:** Pod 2
+- **Product Page & Living PRD:** https://building-with-ai-f26.github.io/js15791-stoicly/
 - **App:** runs locally through Week 4; add a cloud URL in Build 5.
 
 ## Start here: Build 1
@@ -35,11 +35,21 @@ Create your PostHog account in Week 1. Install it on the Product Page and local 
 
 ## Local setup
 
-Clone **your own repository** and ask your coding agent to document the exact install and run commands here and in `AGENTS.md`.
+Requires Python 3.10+ and an [OpenRouter](https://openrouter.ai) API key.
 
 ```bash
-git clone https://github.com/building-with-ai-f26/<your-repo-name>.git
-cd <your-repo-name>
+git clone https://github.com/building-with-ai-f26/js15791-stoicly.git
+cd js15791-stoicly
 ```
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env      # then paste your real OpenRouter key into .env
+python app.py             # open http://localhost:5000
+```
+
+Reflections are saved locally to `data/reflections.json` (ignored by Git, since they're personal).
 
 If your app needs API keys, use a local environment file such as `.env`. Keep private keys out of source code, browser code, screenshots, and commits. The template ignores `.env`; `.env.example` contains placeholders only.

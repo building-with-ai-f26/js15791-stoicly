@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>[Your Product Name] · Building with AI (Fall 2026)</title>
+  <title>Stoicly · Building with AI (Fall 2026)</title>
 
   <!-- Week 1: create your PostHog account only.
        Build 2: paste your project's current PostHog web snippet here,
@@ -144,8 +144,8 @@
     <!-- HERO / PRODUCT PITCH -->
     <header>
       <span class="eyebrow">NYU Stern · Building with AI · Fall 2026</span>
-      <h1>[Your Product Name]</h1>
-      <p class="tagline">[One clear sentence: Who is this for, and what painful job does it do for them?]</p>
+      <h1>Stoicly</h1>
+      <p class="tagline">An AI-powered reflection app for anyone seeking self-improvement: describe a challenge, get a Stoic reframe and one small action, and track your growth over time.</p>
       <div class="cta-row">
         <a class="btn" href="#live-demo" onclick="window.posthog && posthog.capture('clicked_try_product')">See the Product →</a>
         <a class="btn btn-secondary" href="#prd">Read the Living PRD</a>
@@ -157,12 +157,11 @@
     <section id="live-demo">
       <h2>Product Showcase (Prototype / Live App / 2-Min Video)</h2>
       <p>
-        <strong>Current Status:</strong> [Build 1: local prototype / Builds 2–4: local app / Build 5: cloud app]<br />
-        <strong>Demo:</strong> [Add a screenshot or GIF now; add the live cloud app URL in Build 5.]
+        <strong>Current Status:</strong> Build 1 · local prototype (Python + Flask, runs on my laptop)<br />
+        <strong>Demo:</strong> Screenshot of the local prototype below. A live cloud URL and 2-minute video come in Build 5.
       </p>
-      <p class="meta">
-        Ask your coding agent to embed a screenshot or GIF of your local prototype for Build 1. Keep this evidence current, then add your cloud app link and two-minute video in Build 5.
-      </p>
+      <img src="screenshot.png" alt="Stoicly prototype: a journal box, a Stoic reflection split into what is and isn't in your control, a quote, and one action for today" style="width:100%;border:1px solid var(--border);border-radius:8px;" />
+      <p class="meta">How it works: write what's weighing on you → Stoicly separates what's in your control from what isn't, offers a Stoic reframe and a real quote from Marcus Aurelius, Epictetus, or Seneca, and suggests one action for today. Every reflection is saved to your history.</p>
     </section>
 
     <!-- LIVING PRD (Updated every week!) -->
@@ -171,31 +170,31 @@
       <p class="meta">Updated every week as we test with real users and learn what works.</p>
 
       <h3>1. Target User & The Job to Be Done</h3>
-      <p><strong>Who is this for?</strong> [Name a specific, reachable person or role you have direct access to.]</p>
-      <p><strong>The painful "Before" workflow:</strong> [How do they do this today, and why is it slow, manual, or broken?]</p>
-      <p><strong>The "After" workflow with this product:</strong> [What does your tool do for them in one sitting?]</p>
+      <p><strong>Who is this for?</strong> People looking for self-help and personal growth who are curious about Stoic philosophy but don't know how to apply it day to day. <em>First testers:</em> [TODO Juhi: name 2–3 specific people you can reach, e.g. classmates or friends].</p>
+      <p><strong>The painful "Before" workflow:</strong> When something stressful happens (a harsh comment, a setback, a worry), they ruminate, vent to a friend, or scroll generic self-help content. Stoic books are dense and hard to apply in the moment, journaling with a blank page offers no guidance, and there's no record of how they handled past challenges.</p>
+      <p><strong>The "After" workflow with this product:</strong> In under two minutes they write what's bothering them and get a structured Stoic reflection: what's in their control vs. not, a kind reframe, a relevant real quote, and one concrete action for today. Each reflection is saved so they can look back and see their growth.</p>
 
       <h3>2. Scope & Explicit Non-Goals</h3>
       <ul>
-        <li><strong>In Scope (Core Workflow):</strong> [The 1 main workflow this product does reliably]</li>
-        <li><strong>Out of Scope #1:</strong> [Feature you are deliberately NOT building in 6 weeks]</li>
-        <li><strong>Out of Scope #2:</strong> [Feature you are deliberately NOT building in 6 weeks]</li>
-        <li><strong>Out of Scope #3:</strong> [Feature you are deliberately NOT building in 6 weeks]</li>
+        <li><strong>In Scope (Core Workflow):</strong> Describe a challenge → receive a Stoic reflection (control split, reframe, quote, one action) → it's saved to your personal history.</li>
+        <li><strong>Out of Scope #1:</strong> Therapy or crisis support. Stoicly is a reflection tool and points people in crisis to the 988 Lifeline.</li>
+        <li><strong>Out of Scope #2:</strong> Native mobile apps, push notifications, or social/community features.</li>
+        <li><strong>Out of Scope #3:</strong> Gamification (streaks, badges) and a full Stoic library or course content.</li>
       </ul>
 
       <h3>3. How It Works Under the Hood & Riskiest Assumption (Week 2+)</h3>
-      <p><strong>Riskiest Assumption:</strong> [What is the #1 technical or user risk that could sink this product?]</p>
-      <p><strong>Simple Architecture:</strong> [User Input] → [Your App / Server] → [AI Model / Tool] → [Output]</p>
+      <p><strong>Riskiest Assumption:</strong> That AI reflections feel generic or preachy, so users don't come back. Secondary risk: the model inventing fake Stoic quotes.</p>
+      <p><strong>Simple Architecture:</strong> Journal entry (browser) → Flask app (Python, local) → Claude Haiku 5.5 via OpenRouter → structured Stoic reflection, saved to a local JSON history</p>
 
       <h3>4. Unit Economics & Analytics Snapshot (Updated Weekly)</h3>
       <div class="grid-2">
         <div class="stat-box">
           <div class="stat-label">Cumulative Build Spend</div>
-          <div class="stat-value">[Record actual spend]</div>
+          <div class="stat-value">$[TODO]</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Est. Cost Per User Run</div>
-          <div class="stat-value">[Not yet estimated]</div>
+          <div class="stat-value">≈ $0.0003 / reflection</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">User Evidence (Analytics from Build 2)</div>
@@ -216,10 +215,10 @@
       <div class="log-entry">
         <h3>Build 1 · Intent.md & Throwaway Prototype (Due Nov 9)</h3>
         <ul>
-          <li><strong>What shipped:</strong> [What you actually built; link your local prototype screenshot or GIF above.]</li>
-          <li><strong>Things learned with AI:</strong> [What you learned from AI practice and Terminus Episodes 1 and 2.]</li>
-          <li><strong>What broke / changed in PRD:</strong> [Fill in]</li>
-          <li><strong>Cost & time this week:</strong> $[0.00] · [0] hours</li>
+          <li><strong>What shipped:</strong> A working local prototype (Flask + one HTML page): enter a challenge, get a structured Stoic reflection from Claude Haiku 5.5 via OpenRouter, and browse saved past reflections. API key is read from <code>.env</code> only. Product Page and PRD v1 published.</li>
+          <li><strong>Things learned with AI:</strong> [TODO Juhi: in your own words]</li>
+          <li><strong>What broke / changed in PRD:</strong> Narrowed "track personal growth" to a simple saved history for now; trends/insights deferred until real users show what they want. Asking the model for structured JSON made the output consistent and easy to display.</li>
+          <li><strong>Cost & time this week:</strong> $[TODO] · [TODO] hours</li>
         </ul>
       </div>
 
