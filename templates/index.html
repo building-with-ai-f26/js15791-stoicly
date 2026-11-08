@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stoicly</title>
+  <style>
+    :root {
+      --bg: #f6f3ee;
+      --card: #ffffff;
+      --text: #2b2a28;
+      --muted: #6b665e;
+      --border: #e4ddd2;
+      --accent: #5b6b4f;
+      --accent-soft: #eef1ea;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+    }
+    .wrap { max-width: 640px; margin: 0 auto; padding: 48px 16px 80px; }
+    h1 { font-size: 34px; margin: 0; letter-spacing: -0.01em; }
+    .sub { color: var(--muted); margin: 4px 0 32px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 24px;
+      margin-bottom: 20px;
+    }
+    label { font-weight: bold; display: block; margin-bottom: 8px; }
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px;
+      font: inherit;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      resize: vertical;
+      background: #fdfcfa;
+    }
+    button {
+      margin-top: 12px;
+      padding: 10px 20px;
+      font: inherit;
+      font-weight: bold;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    .error { color: #a23b2a; margin-top: 10px; }
+    h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 18px 0 6px; }
+    h2:first-child { margin-top: 0; }
+    ul { margin: 0; padding-left: 20px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+    blockquote {
+      margin: 0;
+      padding: 12px 16px;
+      background: var(--accent-soft);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      font-style: italic;
+    }
+    .author { display: block; font-style: normal; color: var(--muted); margin-top: 4px; }
+    .action { font-weight: bold; }
+    details { border-top: 1px solid var(--border); padding: 10px 0; }
+    details:first-of-type { border-top: none; }
+    summary { cursor: pointer; }
+    .date { color: var(--muted); font-size: 14px; }
+    .note { color: var(--muted); font-size: 13px; text-align: center; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Stoicly</h1>
+    <p class="sub">Reflect like a Stoic. Focus on what you can control.</p>
+
+    <form class="card" id="form">
+      <label for="challenge">What's weighing on you today?</label>
+      <textarea id="challenge" maxlength="2000"
+        placeholder="e.g. My manager criticized my presentation in front of the team and I can't stop replaying it."></textarea>
+      <button type="submit" id="submit">Reflect</button>
+      <div class="error" id="error"></div>
+    </form>
+
+    <section class="card hidden" id="result"></section>
+
+    <section class="card">
+      <h2>Your past reflections</h2>
+      <div id="history"><p class="date">Nothing yet. Your reflections will appear here.</p></div>
+    </section>
+
+    <p class="note">Stoicly is a reflection tool, not therapy. If you're in crisis, call or text 988 (US) or contact local emergency services.</p>
+  </main>
+
+  <script>
+    const form = document.getElementById("form");
+    const input = document.getElementById("challenge");
+    const button = document.getElementById("submit");
+    const errorBox = document.getElementById("error");
+    const result = document.getElementById("result");
+    const history = document.getElementById("history");
+
+    // Small helper: build an element with text (textContent keeps user/model text safe).
+    function el(tag, text, className) {
+      const node = document.createElement(tag);
+      if (text) node.textContent = text;
+      if (className) node.className = className;
+      return node;
+    }
+
+    function list(items) {
+      const ul = el("ul");
+      (items || []).forEach((item) => ul.appendChild(el("li", item)));
+      return ul;
+    }
+
+    // Render one reflection into a container.
+    function renderReflection(r, container) {
+      container.replaceChildren();
+      const grid = el("div", null, "grid");
+      const inCtrl = el("div");
+      inCtrl.append(el("h2", "In your control"), list(r.in_control));
+      const outCtrl = el("div");
+      outCtrl.append(el("h2", "Not in your control"), list(r.not_in_control));
+      grid.append(inCtrl, outCtrl);
+
+      const quote = el("blockquote", "“" + (r.quote || "") + "”");
+      quote.appendChild(el("span", "— " + (r.quote_author || ""), "author"));
+
+      container.append(
+        grid,
+        el("h2", "A Stoic reframe"), el("p", r.reframe),
+        el("h2", "Wisdom"), quote,
+        el("h2", "One action for today"), el("p", r.action, "action")
+      );
+    }
+
+    function renderHistory(items) {
+      if (!items.length) return;
+      history.replaceChildren();
+      items.forEach((r) => {
+        const d = el("details");
+        const s = el("summary");
+        s.append(
+          el("span", new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " · ", "date"),
+          document.createTextNode(r.challenge.length > 70 ? r.challenge.slice(0, 70) + "…" : r.challenge)
+        );
+        const body = el("div");
+        body.style.marginTop = "10px";
+        renderReflection(r, body);
+        d.append(s, body);
+        history.appendChild(d);
+      });
+    }
+
+    async function loadHistory() {
+      const res = await fetch("/api/reflections");
+      renderHistory(await res.json());
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorBox.textContent = "";
+      button.disabled = true;
+      button.textContent = "Reflecting…";
+      try {
+        const res = await fetch("/api/reflect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ challenge: input.value }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Something went wrong.");
+        renderReflection(data, result);
+        result.classList.remove("hidden");
+        input.value = "";
+        loadHistory();
+      } catch (err) {
+        errorBox.textContent = err.message;
+      } finally {
+        button.disabled = false;
+        button.textContent = "Reflect";
+      }
+    });
+
+    loadHistory();
+  </script>
+</body>
+</html>
