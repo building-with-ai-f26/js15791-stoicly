@@ -170,7 +170,7 @@
       <p class="meta">Updated every week as we test with real users and learn what works.</p>
 
       <h3>1. Target User & The Job to Be Done</h3>
-      <p><strong>Who is this for?</strong> People looking for self-help and personal growth who are curious about Stoic philosophy but don't know how to apply it day to day. <em>First testers:</em> [TODO Juhi: name 2–3 specific people you can reach, e.g. classmates or friends].</p>
+      <p><strong>Who is this for?</strong> People looking for self-help and personal growth who are curious about Stoic philosophy but don't know how to apply it day to day. <em>First testers:</em> 2–3 classmates in my NYU Stern cohort who took Prof. Haidt's <em>Work, Wisdom &amp; Happiness</em> course with me, where we first learned about Stoicism. They already know the core ideas and want to keep practicing them, and I can reach them directly to test each build.</p>
       <p><strong>The painful "Before" workflow:</strong> When something stressful happens (a harsh comment, a setback, a worry), they ruminate, vent to a friend, or scroll generic self-help content. Stoic books are dense and hard to apply in the moment, journaling with a blank page offers no guidance, and there's no record of how they handled past challenges.</p>
       <p><strong>The "After" workflow with this product:</strong> In under two minutes they write what's bothering them and get a structured Stoic reflection: what's in their control vs. not, a kind reframe, a relevant real quote, and one concrete action for today. Each reflection is saved so they can look back and see their growth.</p>
 
@@ -190,7 +190,7 @@
       <div class="grid-2">
         <div class="stat-box">
           <div class="stat-label">Cumulative Build Spend</div>
-          <div class="stat-value">$[TODO]</div>
+          <div class="stat-value">$25</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Est. Cost Per User Run</div>
@@ -216,9 +216,9 @@
         <h3>Build 1 · Intent.md & Throwaway Prototype (Due Nov 9)</h3>
         <ul>
           <li><strong>What shipped:</strong> A working local prototype (Flask + one HTML page): enter a challenge, get a structured Stoic reflection from Claude Haiku 5.5 via the Anthropic API, and browse saved past reflections. API key is read from <code>.env</code> only. Product Page and PRD v1 published.</li>
-          <li><strong>Things learned with AI:</strong> [TODO Juhi: in your own words]</li>
-          <li><strong>What broke / changed in PRD:</strong> Narrowed "track personal growth" to a simple saved history for now; trends/insights deferred until real users show what they want. Asking the model for structured JSON made the output consistent and easy to display.</li>
-          <li><strong>Cost & time this week:</strong> $[TODO] · [TODO] hours</li>
+          <li><strong>Things learned with AI:</strong> AI builds a very generic backbone for an app, so everyone's app can end up looking the same. It's up to the builder to define what makes the product different and to know the AI tools well enough to push for a distinct design.</li>
+          <li><strong>What broke / changed in PRD:</strong> Narrowed "track personal growth" to a simple saved history for now; trends/insights deferred until real users show what they want. Asking the model for structured JSON made the output consistent and easy to display. Switched the AI provider from OpenRouter to the Anthropic API (Claude Haiku 5.5) partway through the build.</li>
+          <li><strong>Cost & time this week:</strong> $25 ($20 Claude Pro subscription for Claude Code + $5 Anthropic API credits to power the app) · 3 hours (much of it installing libraries and setting up Git in my workspace)</li>
         </ul>
       </div>
 
