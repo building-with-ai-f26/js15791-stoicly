@@ -52,4 +52,17 @@ python app.py             # open http://localhost:5000
 
 Reflections are saved locally to `data/reflections.json` (ignored by Git, since they're personal).
 
+## Deploying (shareable link)
+
+The app is deployed on [Render](https://render.com) (free tier) using `render.yaml`. Every push to `main` redeploys it automatically.
+
+1. Sign in to Render with GitHub → **New → Blueprint** → choose this repo.
+2. When asked, paste your Anthropic key into `ANTHROPIC_API_KEY`. (It lives only in Render, never in the repo.)
+3. Open the `https://stoicly-….onrender.com` URL Render gives you.
+
+Known limitations of the free tier:
+- The server sleeps after ~15 minutes idle; the first visit after that takes ~30 seconds.
+- Reflections are **shared by all visitors** and are **wiped whenever the server restarts or redeploys** (the disk isn't permanent).
+- Every visitor's reflection uses your API credits, so set a monthly spend limit in the Anthropic Console.
+
 If your app needs API keys, use a local environment file such as `.env`. Keep private keys out of source code, browser code, screenshots, and commits. The template ignores `.env`; `.env.example` contains placeholders only.
