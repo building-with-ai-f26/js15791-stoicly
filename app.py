@@ -17,6 +17,9 @@ import anthropic
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 from pydantic import BaseModel
+from typing import Literal
+
+from quotes import QUOTES
 
 load_dotenv()  # reads ANTHROPIC_API_KEY (and optional ANTHROPIC_MODEL) from .env
 
@@ -30,12 +33,14 @@ The user describes an everyday challenge. Respond with:
 - in_control: 1-3 short points about what is within the user's control
 - not_in_control: 1-3 short points about what is outside their control
 - reframe: 2-4 sentences reframing the situation through a Stoic lens, kind and plain-spoken
-- quote: a real, well-known quote from Marcus Aurelius, Epictetus, or Seneca
-- quote_author: the author of the quote
+- quote_id: the id of the ONE quote from the list below that best fits the situation
 - action: one small, concrete action the user can take today
-Do not invent quotes. Avoid jargon. You are not a therapist; if the user mentions
+Never write quote text yourself; only choose an id. Avoid jargon. You are not a therapist; if the user mentions
 self-harm or crisis, set "reframe" to a gentle message urging them to contact the
-988 Suicide & Crisis Lifeline (call or text 988 in the US) or local emergency services."""
+988 Suicide & Crisis Lifeline (call or text 988 in the US) or local emergency services.
+
+Quotes you may choose from (id: theme):
+""" + "\n".join(f"- {qid}: {q['theme']}" for qid, q in QUOTES.items())
 
 
 class Reflection(BaseModel):
@@ -44,8 +49,7 @@ class Reflection(BaseModel):
     in_control: list[str]
     not_in_control: list[str]
     reframe: str
-    quote: str
-    quote_author: str
+    quote_id: Literal[tuple(QUOTES)]  # the model can only pick a verified quote
     action: str
 
 
@@ -79,7 +83,10 @@ def ask_model(challenge):
     app.logger.info("Model usage: %s input / %s output tokens", u.input_tokens, u.output_tokens)
     if response.parsed_output is None:  # e.g. the model declined or was cut off
         raise ValueError(f"No reflection returned (stop_reason={response.stop_reason})")
-    return response.parsed_output.model_dump()
+    reflection = response.parsed_output.model_dump()
+    quote = QUOTES[reflection.pop("quote_id")]  # fill in exact wording + source
+    reflection.update(quote=quote["text"], quote_author=quote["author"], quote_source=quote["source"])
+    return reflection
 
 
 @app.get("/")

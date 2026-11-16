@@ -156,7 +156,8 @@
       grid.append(inCtrl, outCtrl);
 
       const quote = el("blockquote", "“" + (r.quote || "") + "”");
-      quote.appendChild(el("span", "— " + (r.quote_author || ""), "author"));
+      const cite = "— " + (r.quote_author || "") + (r.quote_source ? ", " + r.quote_source : "");
+      quote.appendChild(el("span", cite, "author"));
 
       container.append(
         grid,

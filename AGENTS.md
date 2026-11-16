@@ -10,6 +10,7 @@
 ## 2. Project Structure
 ```
 app.py                 Flask server: serves the page, calls Claude, saves reflections
+quotes.py              Verified Stoic quotes (exact public-domain wording + source); the model may only pick an id
 templates/index.html   The whole app UI (HTML + CSS + vanilla JS) and PostHog snippet/events
 data/reflections.json  Saved reflections, newest first (created on first run; git-ignored)
 docs/index.html        Public Product Page + Living PRD + build log (GitHub Pages, main /docs)
@@ -20,7 +21,7 @@ tests/                 Build 4 verification guidance (no automated tests yet)
 journal/               Optional weekly working notes
 ```
 
-**Request flow (one reflection):** browser form → `POST /api/reflect` (`app.py`) → `ask_model()` calls Claude with the system prompt + a `Reflection` schema (structured outputs) → JSON reply is validated, saved to `data/reflections.json`, and returned → `templates/index.html` renders it. `GET /api/reflections` loads history.
+**Request flow (one reflection):** browser form → `POST /api/reflect` (`app.py`) → `ask_model()` calls Claude with the system prompt + a `Reflection` schema (structured outputs; `quote_id` is an enum of `quotes.py` keys) → JSON reply is validated, the quote id is swapped for its exact text/author/source, saved to `data/reflections.json`, and returned → `templates/index.html` renders it. `GET /api/reflections` loads history.
 
 ## 3. Setup & Run
 1. **Requirements:** Python 3.10+, an Anthropic API key (console.anthropic.com → Settings → API Keys).
@@ -37,6 +38,7 @@ journal/               Optional weekly working notes
 - **Privacy:** never put journal text or AI replies in event properties. The result card and history carry `ph-mask` (masked in replays) and `ph-no-capture` (autocapture ignores clicks there; otherwise it records the clicked text, e.g. a history summary). Replays also mask all inputs. Both pages tell visitors they are recorded.
 
 ## 5. Non-Negotiable Engineering Rules
+0. **No model-written quotes:** never let the model generate quote text. Add new quotes to `quotes.py` only after copying them exactly from a translation, with the source.
 1. **Plan before coding:** Before touching multiple files, propose a brief plan and wait for approval.
 2. **Small batches:** Make small, focused changes that can be reviewed and explained by a human in a single Pull Request.
 3. **Explainability:** Avoid unnecessary abstractions or dependencies. Help the human builder understand the main components, what changed, why it matters, what could break, and how it was checked.
