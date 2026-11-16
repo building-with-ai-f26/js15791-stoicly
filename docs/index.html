@@ -164,10 +164,10 @@
     <section id="live-demo">
       <h2>Product Showcase (Prototype / Live App / 2-Min Video)</h2>
       <p>
-        <strong>Current Status:</strong> Build 1 · local prototype (Python + Flask, runs on my laptop)<br />
-        <strong>Demo:</strong> Screenshot of the local prototype below. A live cloud URL and 2-minute video come in Build 5.
+        <strong>Current Status:</strong> Build 2 · smallest local version (Python + Flask on my laptop) making real Claude API calls, with PostHog analytics and session replay<br />
+        <strong>Demo:</strong> Screenshot below of one full reflection on the local app. A live cloud URL and 2-minute video come in Build 5.
       </p>
-      <img src="screenshot.png" alt="Stoicly prototype: a journal box, a Stoic reflection split into what is and isn't in your control, a quote, and one action for today" style="width:100%;border:1px solid var(--border);border-radius:8px;" />
+      <img src="screenshot.png" alt="Stoicly local app: a saved reflection on procrastination, split into what is and isn't in your control, with a Stoic reframe, a quote, and one action for today" style="width:100%;border:1px solid var(--border);border-radius:8px;" />
       <p class="meta">How it works: write what's weighing on you → Stoicly separates what's in your control from what isn't, offers a Stoic reframe and a real quote from Marcus Aurelius, Epictetus, or Seneca, and suggests one action for today. Every reflection is saved to your history.</p>
     </section>
 
@@ -189,9 +189,11 @@
         <li><strong>Out of Scope #3:</strong> Gamification (streaks, badges) and a full Stoic library or course content.</li>
       </ul>
 
-      <h3>3. How It Works Under the Hood & Riskiest Assumption (Week 2+)</h3>
-      <p><strong>Riskiest Assumption:</strong> That AI reflections feel generic or preachy, so users don't come back. Secondary risk: the model inventing fake Stoic quotes.</p>
-      <p><strong>Simple Architecture:</strong> Journal entry (browser) → Flask app (Python, local) → Claude Haiku 5.5 via the Anthropic API → structured Stoic reflection, saved to a local JSON history</p>
+      <h3>3. Riskiest Assumption, How Build 2 Tests It & How It Works (PRD v2)</h3>
+      <p><strong>Riskiest Assumption:</strong> That Stoicly's reflections feel personal and useful, not generic or preachy, so people come back to reflect again. Secondary risk: the model presenting invented or paraphrased "quotes" as real Stoic text.</p>
+      <p><strong>How this build tests it:</strong> Every reflection now ends with a one-tap question, "Did this feel personal and useful?" (👍 Yes / 👎 Too generic / 👎 Too preachy), logged to PostHog as <code>reflection_rated</code>. Together with <code>reflection_submitted</code> → <code>reflection_received</code> (the core funnel), <code>past_reflection_opened</code> (do people look back at their growth?) and session replays, this gives a first read on whether reflections land. <em>Pass signal:</em> at least 2 of 3 first testers rate their reflections 👍 and submit a second entry. Quotes are spot-checked by hand against the source texts; in my first two test runs the model returned the same popular paraphrase ("You have power over your mind, not outside events…") attributed to Marcus Aurelius, so quote accuracy is a real problem to fix in Build 3.</p>
+      <p><strong>How the app works:</strong> The user types a challenge in the browser → the page sends it to the Flask server (<code>POST /api/reflect</code>) → the server sends it with a Stoic system prompt and a fixed JSON schema to Claude Haiku 5.5 via the Anthropic API (key kept in <code>.env</code> on the server, never in the browser) → Claude returns structured fields (in control / not in control / reframe / quote / one action) → the server validates them, saves the entry to a local JSON history and returns it → the page displays it. PostHog runs in the browser and records pageviews, clicks and anonymized replays (journal text is masked).</p>
+      <p><strong>Simple Architecture:</strong> Browser (HTML + JS + PostHog) → Flask app (Python, local) → Anthropic API (Claude Haiku 5.5, structured outputs) → <code>data/reflections.json</code></p>
 
       <h3>4. Unit Economics & Analytics Snapshot (Updated Weekly)</h3>
       <div class="grid-2">
@@ -201,11 +203,13 @@
         </div>
         <div class="stat-box">
           <div class="stat-label">Est. Cost Per User Run</div>
-          <div class="stat-value">≈ $0.0003 / reflection</div>
+          <div class="stat-value">≈ $0.00024 / reflection</div>
+          <div class="meta">Measured: 782 input + 315 output tokens on Claude Haiku 5.5 ($0.10 / $0.50 per 1M tokens). About 4,000 reflections per $1.</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">User Evidence (Analytics from Build 2)</div>
-          <div class="stat-value">[Not yet measured]</div>
+          <div class="stat-value">PostHog live (Nov 15)</div>
+          <div class="meta">Tracking pageviews, clicks, the reflection funnel, ratings and session replay on this page and the local app. First tester numbers in Build 3.</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Sponsor Call (Week 6)</div>
@@ -232,9 +236,10 @@
       <div class="log-entry">
         <h3>Build 2 · Smallest Local Version & PostHog (Due Nov 16)</h3>
         <ul>
-          <li><strong>What shipped:</strong> [Local working slice, PostHog verified on this page and the local app, PRD v2, and local setup in AGENTS.md]</li>
-          <li><strong>What broke / changed in PRD:</strong> [Fill in]</li>
-          <li><strong>Cost & time this week:</strong> $[0.00] · [0] hours</li>
+          <li><strong>What shipped:</strong> The smallest local version runs end to end: a real challenge goes from the browser to Flask to Claude Haiku 5.5 and back as a structured Stoic reflection in about 4.5 seconds, saved to history. PostHog is installed on this Product Page (<code>$pageview</code>, <code>clicked_try_product</code>) and on the local app (pageviews, the submit → receive funnel, failures, a helpful/generic/preachy rating, opening past reflections) with session replay. PRD v2 above, and AGENTS.md now documents the project structure, setup, run steps and analytics events.</li>
+          <li><strong>Things learned with AI:</strong> Analytics only help if you decide what question they answer first. Instead of tracking "everything," I tied events to my riskiest assumption (does the reflection feel personal?). Also: a public PostHog project token is fine in the page, but a personal API key never is, the same rule as keeping the Anthropic key in <code>.env</code>.</li>
+          <li><strong>What broke / changed in PRD:</strong> <code>localhost:5000</code> returned a 403 because macOS AirPlay Receiver uses that port, so the app now runs on port 5001. Both test replies attributed the same popular paraphrase to Marcus Aurelius, and I rated one of them "too generic" myself, so quote accuracy and variety moved from a "secondary risk" to something Build 3 has to address. PRD v2 adds a concrete test and pass signal for the riskiest assumption, a plain-language request flow, and a measured cost per run (≈ $0.00024, down from the ≈ $0.0003 estimate). Reflections are personal, so replays mask journal text. Checking PostHog showed that autocapture was still logging the text of a clicked history entry, so I excluded those areas from autocapture too.</li>
+          <li><strong>Cost & time this week:</strong> $0 (no new spend; test API calls cost under a cent from existing credits) · 1 hour · cumulative spend still $25</li>
         </ul>
       </div>
 
