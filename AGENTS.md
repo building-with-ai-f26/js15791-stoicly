@@ -34,7 +34,7 @@ journal/               Optional weekly working notes
 ## 4. Analytics (PostHog)
 - One PostHog project (US cloud) is used by both the Product Page (`docs/index.html`) and the local app (`templates/index.html`). The `phc_…` project token is public by design; never add a personal API key (`phx_…`).
 - **App events:** `$pageview` (automatic), `reflection_submitted` (`entry_length`), `reflection_received` (`latency_ms`), `reflection_failed` (`error`), `reflection_rated` (`rating`: helpful / generic / preachy), `past_reflection_opened`. Product Page: `$pageview`, `clicked_try_product`.
-- **Privacy:** never put journal text or AI replies in event properties. Replays mask inputs and anything with class `ph-mask` (the result card and history). Both pages tell visitors they are recorded.
+- **Privacy:** never put journal text or AI replies in event properties. The result card and history carry `ph-mask` (masked in replays) and `ph-no-capture` (autocapture ignores clicks there; otherwise it records the clicked text, e.g. a history summary). Replays also mask all inputs. Both pages tell visitors they are recorded.
 
 ## 5. Non-Negotiable Engineering Rules
 1. **Plan before coding:** Before touching multiple files, propose a brief plan and wait for approval.
