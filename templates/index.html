@@ -4,6 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Stoicly</title>
+  <!-- PostHog analytics + session replay (public project token, same project as the Product Page).
+       Journal text and AI replies are masked in replays (.ph-mask) and never sent in event properties. -->
+  <script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}p||((p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",p.onerror=function(){p=null},(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r));var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],Object.defineProperty(u,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e}}),Object.defineProperty(u.people,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(){return u.toString(1)+".people (stub)"}}),o="Eh Rh Ph Oh Lh qh init yd bd dd fd Sd wc md xd ad Ed Ad Rd Pd Od Fd capture getExtension gr pd gd calculateEventProperties Ld register register_once register_for_session unregister unregister_for_session zd hd jd getFeatureFlag getFeatureFlagPayload getFeatureFlagResult getAllFeatureFlags isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys onActiveMatchingSurveysChanged renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync Hd identify setPersonProperties unsetPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset Ud shutdown setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty qd Td createPersonProfile setInternalOrTestUser Bd Uh zh opt_in_capturing opt_out_capturing Hh has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing $d debug kc Ls getPageViewId captureTraceFeedback captureTraceMetric rd".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_zDMxTpnyZA3q8ZUaR7PvFcAVYhSBosiVpnhvazwmRgHi', {
+        api_host: 'https://us.i.posthog.com',
+        defaults: '2026-05-30',
+        person_profiles: 'identified_only', // or 'always' to create profiles for anonymous users as well
+        session_recording: { maskAllInputs: true, maskTextSelector: '.ph-mask' },
+    })
+  </script>
   <style>
     :root {
       --bg: #f6f3ee;
@@ -77,6 +88,9 @@
     .date { color: var(--muted); font-size: 14px; }
     .note { color: var(--muted); font-size: 13px; text-align: center; }
     .hidden { display: none; }
+    .feedback { border-top: 1px solid var(--border); margin-top: 18px; padding-top: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .feedback span { color: var(--muted); font-size: 14px; }
+    .feedback button { margin: 0; padding: 6px 12px; font-size: 14px; background: var(--accent-soft); color: var(--text); border: 1px solid var(--border); }
   </style>
 </head>
 <body>
@@ -92,13 +106,14 @@
       <div class="error" id="error"></div>
     </form>
 
-    <section class="card hidden" id="result"></section>
+    <section class="card hidden ph-mask" id="result"></section>
 
     <section class="card">
       <h2>Your past reflections</h2>
-      <div id="history"><p class="date">Nothing yet. Your reflections will appear here.</p></div>
+      <div id="history" class="ph-mask"><p class="date">Nothing yet. Your reflections will appear here.</p></div>
     </section>
 
+    <p class="note">This prototype uses PostHog analytics and session replay to record visits (page views, clicks, and timing) so I can improve it. What you write and Stoicly's replies are masked in recordings.</p>
     <p class="note">Stoicly is a reflection tool, not therapy. If you're in crisis, call or text 988 (US) or contact local emergency services.</p>
   </main>
 
@@ -109,6 +124,11 @@
     const errorBox = document.getElementById("error");
     const result = document.getElementById("result");
     const history = document.getElementById("history");
+
+    // Analytics helper: safe no-op if PostHog is blocked. Never pass journal text here.
+    function track(event, props) {
+      if (window.posthog) posthog.capture(event, props || {});
+    }
 
     // Small helper: build an element with text (textContent keeps user/model text safe).
     function el(tag, text, className) {
@@ -145,6 +165,23 @@
       );
     }
 
+    // "Did this help?" buttons: the Build 2 test of our riskiest assumption
+    // (that reflections feel generic or preachy). Each click is a PostHog event.
+    function feedbackRow(reflectionId) {
+      const row = el("div", null, "feedback");
+      row.appendChild(el("span", "Did this feel personal and useful?"));
+      [["helpful", "👍 Yes"], ["generic", "👎 Too generic"], ["preachy", "👎 Too preachy"]].forEach(([rating, label]) => {
+        const b = el("button", label);
+        b.type = "button";
+        b.addEventListener("click", () => {
+          track("reflection_rated", { rating, reflection_id: reflectionId });
+          row.replaceChildren(el("span", "Thanks, noted."));
+        });
+        row.appendChild(b);
+      });
+      return row;
+    }
+
     function renderHistory(items) {
       if (!items.length) return;
       history.replaceChildren();
@@ -158,6 +195,7 @@
         const body = el("div");
         body.style.marginTop = "10px";
         renderReflection(r, body);
+        d.addEventListener("toggle", () => { if (d.open) track("past_reflection_opened"); });
         d.append(s, body);
         history.appendChild(d);
       });
@@ -171,6 +209,8 @@
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       errorBox.textContent = "";
+      const startedAt = performance.now();
+      track("reflection_submitted", { entry_length: input.value.trim().length });
       button.disabled = true;
       button.textContent = "Reflecting…";
       try {
@@ -182,11 +222,14 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Something went wrong.");
         renderReflection(data, result);
+        result.appendChild(feedbackRow(data.id));
         result.classList.remove("hidden");
+        track("reflection_received", { latency_ms: Math.round(performance.now() - startedAt) });
         input.value = "";
         loadHistory();
       } catch (err) {
         errorBox.textContent = err.message;
+        track("reflection_failed", { error: err.message });
       } finally {
         button.disabled = false;
         button.textContent = "Reflect";

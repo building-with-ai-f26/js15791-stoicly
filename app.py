@@ -3,7 +3,8 @@
 You describe a challenge, an AI model replies with a Stoic reflection,
 and each reflection is saved to data/reflections.json so you can look back.
 
-Run:  python app.py   then open http://localhost:5000
+Run:  python app.py   then open http://localhost:5001
+(Port 5000 is taken by AirPlay Receiver on macOS; override with PORT in .env.)
 """
 
 import json
@@ -74,6 +75,8 @@ def ask_model(challenge):
         messages=[{"role": "user", "content": challenge}],
         output_format=Reflection,
     )
+    u = response.usage  # logged so we can measure real cost per reflection
+    app.logger.info("Model usage: %s input / %s output tokens", u.input_tokens, u.output_tokens)
     if response.parsed_output is None:  # e.g. the model declined or was cut off
         raise ValueError(f"No reflection returned (stop_reason={response.stop_reason})")
     return response.parsed_output.model_dump()
@@ -118,4 +121,4 @@ def reflect():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=int(os.getenv("PORT", "5001")))
