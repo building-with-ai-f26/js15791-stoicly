@@ -47,7 +47,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env      # then paste your real Anthropic key into .env
-python app.py             # open http://localhost:5000
+python app.py             # open http://localhost:5001 (5000 is used by macOS AirPlay)
 ```
 
 Reflections are saved locally to `data/reflections.json` (ignored by Git, since they're personal).

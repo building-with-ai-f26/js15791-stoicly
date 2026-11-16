@@ -7,13 +7,36 @@
 - **Primary user & core workflow:** People seeking self-help guided by Stoicism. Core workflow: describe challenge → Stoic reflection → saved to history. Full PRD in `docs/index.html`. UI must stay simple and user-friendly.
 - **Tech stack:** Python 3 / Flask (`app.py`) / plain HTML+JS (`templates/index.html`) / local JSON file (`data/reflections.json`) / Anthropic API via the `anthropic` Python SDK with structured outputs (default model `claude-haiku-5-5`, override with `ANTHROPIC_MODEL`)
 
-## 2. Commands
-- **Install dependencies:** `python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
-- **Run locally:** `python app.py` → http://localhost:5000 (needs `ANTHROPIC_API_KEY` in `.env`)
+## 2. Project Structure
+```
+app.py                 Flask server: serves the page, calls Claude, saves reflections
+templates/index.html   The whole app UI (HTML + CSS + vanilla JS) and PostHog snippet/events
+data/reflections.json  Saved reflections, newest first (created on first run; git-ignored)
+docs/index.html        Public Product Page + Living PRD + build log (GitHub Pages, main /docs)
+docs/screenshot.png    Prototype screenshot shown on the Product Page
+.env.example           Template for local secrets; copy to .env (never commit .env)
+requirements.txt       Python dependencies (flask, anthropic, python-dotenv)
+tests/                 Build 4 verification guidance (no automated tests yet)
+journal/               Optional weekly working notes
+```
+
+**Request flow (one reflection):** browser form → `POST /api/reflect` (`app.py`) → `ask_model()` calls Claude with the system prompt + a `Reflection` schema (structured outputs) → JSON reply is validated, saved to `data/reflections.json`, and returned → `templates/index.html` renders it. `GET /api/reflections` loads history.
+
+## 3. Setup & Run
+1. **Requirements:** Python 3.10+, an Anthropic API key (console.anthropic.com → Settings → API Keys).
+2. **Install:** `python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
+3. **Configure:** `cp .env.example .env`, then set `ANTHROPIC_API_KEY`. Optional: `ANTHROPIC_MODEL` (default `claude-haiku-5-5`), `PORT` (default `5001`).
+4. **Run:** `python app.py` → open http://localhost:5001. (Port 5000 is taken by AirPlay Receiver on macOS.)
+5. **Check it works:** submit a challenge; the terminal logs `Model usage: N input / M output tokens` for each call, and the reflection appears under "Your past reflections".
 - **Run deterministic tests:** none yet (planned for Build 4)
 - **Run model evals:** none yet (planned for Build 4)
 
-## 3. Non-Negotiable Engineering Rules
+## 4. Analytics (PostHog)
+- One PostHog project (US cloud) is used by both the Product Page (`docs/index.html`) and the local app (`templates/index.html`). The `phc_…` project token is public by design; never add a personal API key (`phx_…`).
+- **App events:** `$pageview` (automatic), `reflection_submitted` (`entry_length`), `reflection_received` (`latency_ms`), `reflection_failed` (`error`), `reflection_rated` (`rating`: helpful / generic / preachy), `past_reflection_opened`. Product Page: `$pageview`, `clicked_try_product`.
+- **Privacy:** never put journal text or AI replies in event properties. Replays mask inputs and anything with class `ph-mask` (the result card and history). Both pages tell visitors they are recorded.
+
+## 5. Non-Negotiable Engineering Rules
 1. **Plan before coding:** Before touching multiple files, propose a brief plan and wait for approval.
 2. **Small batches:** Make small, focused changes that can be reviewed and explained by a human in a single Pull Request.
 3. **Explainability:** Avoid unnecessary abstractions or dependencies. Help the human builder understand the main components, what changed, why it matters, what could break, and how it was checked.
