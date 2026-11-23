@@ -153,7 +153,7 @@
       <h1>Stoicly</h1>
       <p class="tagline">An AI-powered reflection app for anyone seeking self-improvement: describe a challenge, get a Stoic reframe and one small action, and track your growth over time.</p>
       <div class="cta-row">
-        <a class="btn" href="#live-demo" onclick="window.posthog && posthog.capture('clicked_try_product')">See the Product →</a>
+        <a class="btn" href="https://js15791-stoicly.onrender.com/" onclick="window.posthog && posthog.capture('clicked_try_product')">Try Stoicly →</a>
         <a class="btn btn-secondary" href="#prd">Read the Living PRD</a>
         <a class="btn btn-secondary" href="#build-log">Weekly Build Log</a>
       </div>
@@ -164,7 +164,8 @@
     <section id="live-demo">
       <h2>Product Showcase (Prototype / Live App / 2-Min Video)</h2>
       <p>
-        <strong>Current Status:</strong> Build 2 · smallest local version (Python + Flask on my laptop) making real Claude API calls, with PostHog analytics and session replay<br />
+        <strong>Live app:</strong> <a href="https://js15791-stoicly.onrender.com/">js15791-stoicly.onrender.com</a> (free tier: the first visit after a quiet spell takes up to a minute to wake up)<br />
+        <strong>Current Status:</strong> Build 3 · deployed on Render, security-audited (<a href="https://github.com/building-with-ai-f26/js15791-stoicly/blob/main/SECURITY.md">SECURITY.md</a>). Built on Build 2's local version making real Claude API calls, with PostHog analytics and session replay<br />
         <strong>Demo:</strong> Screenshot below of one full reflection on the local app. A live cloud URL and 2-minute video come in Build 5.
       </p>
       <img src="screenshot.png" alt="Stoicly local app: a saved reflection on procrastination, split into what is and isn't in your control, with a Stoic reframe, a quote, and one action for today" style="width:100%;border:1px solid var(--border);border-radius:8px;" />
@@ -194,6 +195,11 @@
       <p><strong>How this build tests it:</strong> Every reflection now ends with a one-tap question, "Did this feel personal and useful?" (👍 Yes / 👎 Too generic / 👎 Too preachy), logged to PostHog as <code>reflection_rated</code>. Together with <code>reflection_submitted</code> → <code>reflection_received</code> (the core funnel), <code>past_reflection_opened</code> (do people look back at their growth?) and session replays, this gives a first read on whether reflections land. <em>Pass signal:</em> at least 2 of 3 first testers rate their reflections 👍 and submit a second entry. Quotes are spot-checked by hand against the source texts; in my first two test runs the model returned the same popular paraphrase ("You have power over your mind, not outside events…") attributed to Marcus Aurelius, so I fixed it on Nov 16: the model can no longer write quote text. It chooses from 12 verified quotes (with book and section), and the server inserts the exact wording.</p>
       <p><strong>How the app works:</strong> The user types a challenge in the browser → the page sends it to the Flask server (<code>POST /api/reflect</code>) → the server sends it with a Stoic system prompt, a fixed JSON schema and a list of verified quote ids to Claude Haiku 5.5 via the Anthropic API (key kept in <code>.env</code> on the server, never in the browser) → Claude returns structured fields (in control / not in control / reframe / chosen quote id / one action) → the server validates them, fills in the exact quote text and source from <code>quotes.py</code>, saves the entry to a local JSON history and returns it → the page displays it. PostHog runs in the browser and records pageviews, clicks and anonymized replays (journal text is masked).</p>
       <p><strong>Simple Architecture:</strong> Browser (HTML + JS + PostHog) → Flask app (Python, local) → Anthropic API (Claude Haiku 5.5, structured outputs) → <code>data/reflections.json</code></p>
+
+      <h3>3b. Hosting, Data & Security (PRD v3)</h3>
+      <p><strong>Hosting:</strong> Render free tier (Python web service, gunicorn). The Product Page stays on GitHub Pages. Render can't auto-deploy from the class GitHub organization without an owner's approval, so I deploy from the public repo with <em>Manual Deploy</em> after each push.</p>
+      <p><strong>Database: none, on purpose.</strong> Reflections are private journal entries, so the server stores nothing; each visitor's history is saved only in their own browser. This removed a real leak: the Build 2 server kept one shared history file, which on a public URL would have shown every visitor everyone's entries (and Render wipes local files on restart anyway). Trade-off: history doesn't sync across devices. Sign-in and a real database (Supabase with Row Level Security) only if testers ask for that.</p>
+      <p><strong>Security choices:</strong> the Anthropic key lives only in Render's environment settings; the paid AI route is rate-limited (5/minute and 30/day per visitor, plus site-wide caps of 20/minute and 500/day, about $0.12/day at most) and returns 429 when exceeded; request size is capped; error messages don't reveal setup; dependencies were audited and upgraded; and an agent security review tried 7 attacks. Full results in <a href="https://github.com/building-with-ai-f26/js15791-stoicly/blob/main/SECURITY.md">SECURITY.md</a>.</p>
 
       <h3>4. Unit Economics & Analytics Snapshot (Updated Weekly)</h3>
       <div class="grid-2">
@@ -246,9 +252,10 @@
       <div class="log-entry">
         <h3>Build 3 · Build.exe: The Core Workflow (Due Nov 23)</h3>
         <ul>
-          <li><strong>What shipped:</strong> [End-to-end workflow working with real inputs + PostHog funnel events]</li>
-          <li><strong>What broke / changed in PRD:</strong> [Fill in]</li>
-          <li><strong>Cost & time this week:</strong> $[0.00] · [0] hours</li>
+          <li><strong>What shipped:</strong> Stoicly is live at <a href="https://js15791-stoicly.onrender.com/">js15791-stoicly.onrender.com</a> and works start to finish on a phone (describe a challenge → Stoic reflection with a verified quote → saved to your history). The server no longer stores anything; history lives in each visitor's browser. Rate limits on the AI route, a security audit (<a href="https://github.com/building-with-ai-f26/js15791-stoicly/blob/main/SECURITY.md">SECURITY.md</a>), and AGENTS.md now has Shipping steps, an "Ask me first" list and rules learned from my agent's real mistakes. PostHog and session replay keep running on the live site.</li>
+          <li><strong>Things learned with AI:</strong> Going public changes what "working" means. A shared history file was fine on my laptop but would have exposed everyone's journal entries on the internet. Testing the live site (not just localhost) mattered: the rate limit passed locally but a faked header got around the per-visitor limit on Render, which I only saw by attacking the real URL.</li>
+          <li><strong>What broke / changed in PRD:</strong> Render couldn't see my repo because it belongs to the class GitHub organization, so I deploy from the public repo URL with Manual Deploy. The per-visitor rate limit could be dodged on Render by faking the <code>X-Forwarded-For</code> header, so I added site-wide caps that can't be faked (20/minute, 500/day). pip-audit flagged Flask and python-dotenv; both upgraded. PRD v3 adds hosting, the no-database decision and security choices.</li>
+          <li><strong>Cost & time this week:</strong> $0 (no new spend; test calls cost well under a cent) · [TODO] hours · cumulative spend still $25</li>
         </ul>
       </div>
 

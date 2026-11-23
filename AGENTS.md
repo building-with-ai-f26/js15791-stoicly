@@ -27,7 +27,7 @@ journal/               Optional weekly working notes
 ## 3. Setup & Run
 1. **Requirements:** Python 3.10+, an Anthropic API key (console.anthropic.com → Settings → API Keys).
 2. **Install:** `python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`
-3. **Configure:** `cp .env.example .env`, then set `ANTHROPIC_API_KEY`. Optional: `ANTHROPIC_MODEL` (default `claude-haiku-5-5`), `PORT` (default `5001`), `GLOBAL_DAILY_LIMIT` (default `500`), `FLASK_DEBUG=1` for auto-reload while developing.
+3. **Configure:** `cp .env.example .env`, then set `ANTHROPIC_API_KEY`. Optional: `ANTHROPIC_MODEL` (default `claude-haiku-5-5`), `PORT` (default `5001`), `GLOBAL_MINUTE_LIMIT` (default `20`), `GLOBAL_DAILY_LIMIT` (default `500`), `FLASK_DEBUG=1` for auto-reload while developing.
 4. **Run:** `python app.py` → open http://localhost:5001. (Port 5000 is taken by AirPlay Receiver on macOS.)
 5. **Check it works:** submit a challenge; the terminal logs `Model usage: N input / M output tokens` for each call, and the reflection appears under "Your past reflections".
 6. **Production-like run:** `gunicorn app:app --bind 127.0.0.1:5001 --timeout 90` (what Render runs).
@@ -40,16 +40,16 @@ journal/               Optional weekly working notes
 - **Privacy:** never put journal text or AI replies in event properties. The result card and history carry `ph-mask` (masked in replays) and `ph-no-capture` (autocapture ignores clicks there; otherwise it records the clicked text, e.g. a history summary). Replays also mask all inputs. Both pages tell visitors they are recorded.
 
 ## 5. Shipping (deploy to Render)
-Live app: https://stoicly.onrender.com (Render free tier, auto-deploys on every push to `main`). Product Page: GitHub Pages from `main` `/docs`.
+Live app: https://js15791-stoicly.onrender.com (Render free tier, Web Service deployed from the **public repo URL**: the class GitHub org hasn't approved the Render GitHub app, so there is **no auto-deploy**). Product Page: GitHub Pages from `main` `/docs`.
 
-**First-time setup (human does this once):** Render → sign in with GitHub → **New → Blueprint** → pick this repo → when asked, paste the Anthropic key into `ANTHROPIC_API_KEY` → Apply. Then in the Anthropic Console set a monthly spend limit.
+**First-time setup (human does this once):** Render → **New → Web Service → Public Git Repository** → `https://github.com/building-with-ai-f26/js15791-stoicly`, branch `main`, runtime Python 3, build `pip install -r requirements.txt`, start `gunicorn app:app --bind 0.0.0.0:$PORT --timeout 90`, instance Free; env vars `ANTHROPIC_API_KEY` (pasted only in Render) and `PYTHON_VERSION=3.13`. Then in the Anthropic Console set a monthly spend limit. (If the org later approves the Render GitHub app, `render.yaml` works as a Blueprint with auto-deploy.)
 
 **Every deploy (agent follows these steps):**
 1. `git status` is clean and you are on `main` (or a branch that was reviewed and merged).
 2. Run checks: `python -c "import app"`; start gunicorn locally and submit one reflection; `pip-audit -r requirements.txt` shows no high-severity issues.
 3. Secret scan, must print nothing: `git grep -nE "sb_secret_|service_role|sk-or-|sk-ant-|sk-proj-|sk_live_" -- . ':!.env.example'`
-4. `git push origin main` → Render rebuilds automatically (≈2–3 min). Watch the deploy in the Render dashboard; ask the human if it fails.
-5. Smoke test the live URL: page loads on a phone, one reflection works, `curl -s https://stoicly.onrender.com/ | grep -cE "sk-ant-|sk-or-"` prints 0.
+4. `git push origin main`, then **ask the human to click Render → js15791-stoicly → Manual Deploy → Deploy latest commit** (≈1–2 min) and wait for **Live**. Ask the human if it fails.
+5. Smoke test the live URL: page loads on a phone, one reflection works, `curl -s https://js15791-stoicly.onrender.com/ | grep -cE "sk-ant-|sk-or-"` prints 0.
 6. **Rollback:** Render dashboard → the service → **Events** → pick the last good deploy → **Rollback**. Or `git revert <bad commit>` and push.
 
 Keep gunicorn at **one worker** (the default): the rate limiter lives in memory, so more workers would each get their own limits.
@@ -72,4 +72,5 @@ Keep gunicorn at **one worker** (the default): the rate limiter lives in memory,
 ### Rules learned from real mistakes
 7. **Check what analytics actually send, not just what replays show.** (Build 2: the agent masked journal text in session replay but PostHog autocapture still sent the text of a clicked history entry. Found only by reading the PostHog event list.) After any analytics change, open PostHog Activity and read the event properties.
 8. **Never fill in numbers the human didn't give you.** (Build 2: the agent changed the logged hours from 1 to 1.5 without asking.) Hours, spend, tester counts and results in the build log come from the human; leave a clear `[TODO]` and ask.
-9. **Verify which server you are testing.** (Build 3: a rate-limit test hit a leftover dev server on port 5001 instead of the new gunicorn server.) Before testing, check `lsof -iTCP:<port> -sTCP:LISTEN` and stop stale servers.
+9. **Test the live URL, not just localhost.** (Build 3: the per-visitor rate limit passed locally but a faked `X-Forwarded-For` header bypassed it on Render.) Security checks count only when run against the deployed site.
+10. **Verify which server you are testing.** (Build 3: a rate-limit test hit a leftover dev server on port 5001 instead of the new gunicorn server.) Before testing, check `lsof -iTCP:<port> -sTCP:LISTEN` and stop stale servers.

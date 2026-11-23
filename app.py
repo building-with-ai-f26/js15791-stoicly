@@ -32,7 +32,11 @@ MAX_ENTRY_CHARS = 2000
 
 # Rate limits on the paid AI route (in-memory; fine for one Render instance).
 PER_VISITOR_LIMITS = [(5, 60), (30, 24 * 60 * 60)]  # 5/minute and 30/day per IP
-GLOBAL_DAILY_LIMIT = int(os.getenv("GLOBAL_DAILY_LIMIT", "500"))  # all visitors; caps spend at ~$0.12/day
+# Site-wide limits can't be dodged by faking IP headers (per-IP limits can be on Render).
+GLOBAL_LIMITS = [
+    (int(os.getenv("GLOBAL_MINUTE_LIMIT", "20")), 60),  # bursts from scripts
+    (int(os.getenv("GLOBAL_DAILY_LIMIT", "500")), 24 * 60 * 60),  # caps spend at ~$0.12/day
+]
 
 SYSTEM_PROMPT = """You are Stoicly, a warm, practical guide to Stoic philosophy.
 The user describes an everyday challenge. Respond with:
@@ -73,7 +77,7 @@ def rate_limited(visitor):
     """Return True if this visitor (or the whole site) is over a limit; else record the hit."""
     now = time.time()
     checks = [(f"ip:{visitor}:{window}", limit, window) for limit, window in PER_VISITOR_LIMITS]
-    checks.append(("global", GLOBAL_DAILY_LIMIT, 24 * 60 * 60))
+    checks += [(f"global:{window}", limit, window) for limit, window in GLOBAL_LIMITS]
     with _hits_lock:
         for key, limit, window in checks:
             q = _hits[key]
@@ -117,15 +121,6 @@ def ask_model(challenge):
 @app.get("/")
 def home():
     return render_template("index.html")
-
-
-@app.get("/api/_ipcheck")  # TEMPORARY (Build 3 audit): see which IP headers Render sends. Remove after.
-def ipcheck():
-    names = ["X-Forwarded-For", "X-Real-Ip", "True-Client-Ip", "Cf-Connecting-Ip", "X-Envoy-External-Address", "Forwarded"]
-    raw = request.environ.get("werkzeug.proxy_fix.orig", {})
-    return jsonify(remote_addr=request.remote_addr, orig_remote=raw.get("REMOTE_ADDR"),
-                   headers={n: request.headers.get(n) for n in names},
-                   orig_xff=raw.get("HTTP_X_FORWARDED_FOR"))
 
 
 @app.post("/api/reflect")
