@@ -119,6 +119,15 @@ def home():
     return render_template("index.html")
 
 
+@app.get("/api/_ipcheck")  # TEMPORARY (Build 3 audit): see which IP headers Render sends. Remove after.
+def ipcheck():
+    names = ["X-Forwarded-For", "X-Real-Ip", "True-Client-Ip", "Cf-Connecting-Ip", "X-Envoy-External-Address", "Forwarded"]
+    raw = request.environ.get("werkzeug.proxy_fix.orig", {})
+    return jsonify(remote_addr=request.remote_addr, orig_remote=raw.get("REMOTE_ADDR"),
+                   headers={n: request.headers.get(n) for n in names},
+                   orig_xff=raw.get("HTTP_X_FORWARDED_FOR"))
+
+
 @app.post("/api/reflect")
 def reflect():
     if rate_limited(request.remote_addr):
