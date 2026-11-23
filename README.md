@@ -50,6 +50,16 @@ cp .env.example .env      # then paste your real Anthropic key into .env
 python app.py             # open http://localhost:5001 (5000 is used by macOS AirPlay)
 ```
 
-Reflections are saved locally to `data/reflections.json` (ignored by Git, since they're personal).
+Reflections are saved only in your browser (`localStorage`); the server stores nothing.
+
+## Deploying (public link)
+
+The app runs on [Render](https://render.com) (free tier) from `render.yaml`, and every push to `main` redeploys it. Full steps, checks and rollback are in [`AGENTS.md`](./AGENTS.md#5-shipping-deploy-to-render); the security audit is in [`SECURITY.md`](./SECURITY.md).
+
+1. Sign in to Render with GitHub → **New → Blueprint** → choose this repo.
+2. Paste your Anthropic key into `ANTHROPIC_API_KEY` when asked (it lives only in Render, never in the repo).
+3. Set a monthly spend limit in the Anthropic Console.
+
+Free-tier notes: the server sleeps after ~15 minutes idle, so the first visit after that takes ~30-60 seconds. Rate limits reset when it restarts; the Anthropic spend limit is the hard backstop.
 
 If your app needs API keys, use a local environment file such as `.env`. Keep private keys out of source code, browser code, screenshots, and commits. The template ignores `.env`; `.env.example` contains placeholders only.
