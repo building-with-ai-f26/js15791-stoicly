@@ -114,6 +114,7 @@
       <div id="history" class="ph-mask ph-no-capture"><p class="date">Nothing yet. Your reflections will appear here.</p></div>
     </section>
 
+    <p class="note">Your reflections are saved only in this browser on this device. Stoicly's server doesn't keep them.</p>
     <p class="note">This prototype uses PostHog analytics and session replay to record visits (page views, clicks, and timing) so I can improve it. What you write and Stoicly's replies are masked in recordings.</p>
     <p class="note">Stoicly is a reflection tool, not therapy. If you're in crisis, call or text 988 (US) or contact local emergency services.</p>
   </main>
@@ -203,9 +204,22 @@
       });
     }
 
-    async function loadHistory() {
-      const res = await fetch("/api/reflections");
-      renderHistory(await res.json());
+    // History lives only in this browser (the server stores nothing).
+    const HISTORY_KEY = "stoicly.history";
+    const MAX_HISTORY = 100;
+
+    function readHistory() {
+      try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; }
+    }
+
+    function saveToHistory(entry) {
+      const items = [entry, ...readHistory()].slice(0, MAX_HISTORY);
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(items)); } catch { /* private mode: history just won't persist */ }
+      return items;
+    }
+
+    function loadHistory() {
+      renderHistory(readHistory());
     }
 
     form.addEventListener("submit", async (e) => {
@@ -221,14 +235,14 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ challenge: input.value }),
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || "Something went wrong.");
         renderReflection(data, result);
         result.appendChild(feedbackRow(data.id));
         result.classList.remove("hidden");
         track("reflection_received", { latency_ms: Math.round(performance.now() - startedAt) });
         input.value = "";
-        loadHistory();
+        renderHistory(saveToHistory(data));
       } catch (err) {
         errorBox.textContent = err.message;
         track("reflection_failed", { error: err.message });

@@ -1,0 +1,14 @@
+# Render deploy config: https://render.com/docs/blueprint-spec
+# The API key is NOT stored here. Render asks for it when you create the service.
+services:
+  - type: web
+    name: stoicly
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 90
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13"
+      - key: ANTHROPIC_API_KEY
+        sync: false   # you paste the real key into Render's dashboard

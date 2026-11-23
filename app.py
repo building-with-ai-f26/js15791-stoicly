@@ -1,21 +1,24 @@
 """Stoicly: a tiny local prototype.
 
-You describe a challenge, an AI model replies with a Stoic reflection,
-and each reflection is saved to data/reflections.json so you can look back.
+You describe a challenge and an AI model replies with a Stoic reflection.
+The server stores nothing: each visitor's history is kept in their own
+browser (localStorage), so reflections stay private and survive restarts.
 
 Run:  python app.py   then open http://localhost:5001
 (Port 5000 is taken by AirPlay Receiver on macOS; override with PORT in .env.)
 """
 
-import json
 import os
+import threading
+import time
 import uuid
+from collections import defaultdict, deque
 from datetime import datetime, timezone
-from pathlib import Path
 
 import anthropic
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
+from werkzeug.middleware.proxy_fix import ProxyFix
 from pydantic import BaseModel
 from typing import Literal
 
@@ -25,8 +28,11 @@ load_dotenv()  # reads ANTHROPIC_API_KEY (and optional ANTHROPIC_MODEL) from .en
 
 API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-5-5")
-DATA_FILE = Path(__file__).parent / "data" / "reflections.json"
 MAX_ENTRY_CHARS = 2000
+
+# Rate limits on the paid AI route (in-memory; fine for one Render instance).
+PER_VISITOR_LIMITS = [(5, 60), (30, 24 * 60 * 60)]  # 5/minute and 30/day per IP
+GLOBAL_DAILY_LIMIT = int(os.getenv("GLOBAL_DAILY_LIMIT", "500"))  # all visitors; caps spend at ~$0.12/day
 
 SYSTEM_PROMPT = """You are Stoicly, a warm, practical guide to Stoic philosophy.
 The user describes an everyday challenge. Respond with:
@@ -54,19 +60,38 @@ class Reflection(BaseModel):
 
 
 app = Flask(__name__)
+app.logger.setLevel("INFO")  # so token-usage lines show up in Render's logs too
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024  # reject oversized request bodies
+# Render sits behind one proxy; trust its X-Forwarded-For so we see the real visitor IP.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
+
+_hits = defaultdict(deque)  # key -> timestamps of recent requests
+_hits_lock = threading.Lock()
 
 
-def load_reflections():
-    if not DATA_FILE.exists():
-        return []
-    return json.loads(DATA_FILE.read_text())
+def rate_limited(visitor):
+    """Return True if this visitor (or the whole site) is over a limit; else record the hit."""
+    now = time.time()
+    checks = [(f"ip:{visitor}:{window}", limit, window) for limit, window in PER_VISITOR_LIMITS]
+    checks.append(("global", GLOBAL_DAILY_LIMIT, 24 * 60 * 60))
+    with _hits_lock:
+        for key, limit, window in checks:
+            q = _hits[key]
+            while q and q[0] <= now - window:
+                q.popleft()
+            if len(q) >= limit:
+                return True
+        for key, _, _ in checks:
+            _hits[key].append(now)
+    return False
 
 
-def save_reflection(entry):
-    DATA_FILE.parent.mkdir(exist_ok=True)
-    reflections = load_reflections()
-    reflections.insert(0, entry)  # newest first
-    DATA_FILE.write_text(json.dumps(reflections, indent=2))
+@app.after_request
+def security_headers(resp):
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Frame-Options"] = "DENY"
+    resp.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return resp
 
 
 def ask_model(challenge):
@@ -94,25 +119,26 @@ def home():
     return render_template("index.html")
 
 
-@app.get("/api/reflections")
-def list_reflections():
-    return jsonify(load_reflections())
-
-
 @app.post("/api/reflect")
 def reflect():
-    challenge = (request.get_json(silent=True) or {}).get("challenge", "").strip()
+    if rate_limited(request.remote_addr):
+        return jsonify(error="You've reached the limit for now. Take a breath and try again in a little while."), 429
+    payload = request.get_json(silent=True)
+    challenge = payload.get("challenge") if isinstance(payload, dict) else None
+    challenge = challenge.strip() if isinstance(challenge, str) else ""
     if not challenge:
         return jsonify(error="Please describe what's on your mind."), 400
     if len(challenge) > MAX_ENTRY_CHARS:
         return jsonify(error=f"Please keep it under {MAX_ENTRY_CHARS} characters."), 400
     if not API_KEY or "replace-with-your-key" in API_KEY:
-        return jsonify(error="No Anthropic API key found. Add ANTHROPIC_API_KEY to your .env file."), 500
+        app.logger.error("ANTHROPIC_API_KEY is missing (set it in .env locally or in Render's dashboard)")
+        return jsonify(error="Stoicly isn't set up correctly right now. Please try again later."), 500
 
     try:
         reflection = ask_model(challenge)
     except anthropic.AuthenticationError:
-        return jsonify(error="Your Anthropic API key was rejected. Check ANTHROPIC_API_KEY in .env."), 502
+        app.logger.error("Anthropic rejected ANTHROPIC_API_KEY")  # details stay in server logs, not the browser
+        return jsonify(error="Stoicly couldn't reach the AI just now. Please try again."), 502
     except (anthropic.APIError, ValueError) as exc:
         app.logger.error("Model call failed: %s", exc)
         return jsonify(error="Stoicly couldn't reach the AI just now. Please try again."), 502
@@ -123,9 +149,9 @@ def reflect():
         "challenge": challenge,
         **reflection,
     }
-    save_reflection(entry)
-    return jsonify(entry)
+    return jsonify(entry)  # not stored on the server; the browser keeps its own history
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=int(os.getenv("PORT", "5001")))
+    # Debug mode (auto-reload + in-browser debugger) only when FLASK_DEBUG=1, never in production.
+    app.run(debug=os.getenv("FLASK_DEBUG") == "1", port=int(os.getenv("PORT", "5001")))
